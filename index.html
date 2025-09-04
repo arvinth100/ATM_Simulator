@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ATM Simulator – Inline HTML/CSS/JS</title>
+  <style>
+    :root{
+      --bg:#0b1220;--card:#0f172a;--glass:rgba(255,255,255,.06);
+      --text:#e5e7eb;--muted:#94a3b8;--accent:#22d3ee;--accent2:#a78bfa;
+      --danger:#ef4444;--success:#10b981;--warning:#f59e0b;
+      --ring: 0 0 0 2px rgba(34,211,238,.5);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 20px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;}
+    body{margin:0;background:radial-gradient(1200px 800px at 80% -20%, rgba(167,139,250,.25), transparent 60%),
+          radial-gradient(900px 700px at 10% 110%, rgba(34,211,238,.25), transparent 60%), var(--bg);
+      color:var(--text);font:16px/1.4 system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif;}
+    .wrap{min-height:100%;display:grid;place-items:center;padding:32px}
+    .atm{width:min(980px,100%);display:grid;grid-template-columns: 1.1fr .9fr;gap:28px;align-items:stretch}
+    @media (max-width:900px){.atm{grid-template-columns: 1fr;}}
+
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.08); border-radius:var(--radius); box-shadow:var(--shadow); position:relative; overflow:hidden}
+    .card::after{content:""; position:absolute; inset:0; background: radial-gradient( 800px 300px at -10% -10%, rgba(34,211,238,.12), transparent 40%),
+                   radial-gradient( 800px 300px at 110% 110%, rgba(167,139,250,.12), transparent 40%); pointer-events:none}
+
+    .screen{padding:28px 28px 20px; display:flex; flex-direction:column; gap:16px;}
+    .brand{display:flex; align-items:center; justify-content:space-between; gap:12px}
+    .brand h1{margin:0;font-size:22px;letter-spacing:.4px}
+    .pill{font-size:12px; color:#0b1220; background:linear-gradient(90deg,var(--accent), var(--accent2));
+      padding:6px 10px; border-radius:999px; font-weight:700}
+
+    .lcd{background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:18px; min-height:140px;
+      display:grid; align-content:center; gap:10px}
+    .lcd h2{margin:0; font-size:20px}
+    .muted{color:var(--muted)}
+    .balance{font-weight:800; font-size:34px; letter-spacing:.3px}
+
+    .menu{display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px}
+    .menu button{padding:14px 16px; border-radius:14px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.04);
+      color:var(--text); font-weight:600; letter-spacing:.2px; cursor:pointer; transition:transform .06s ease, box-shadow .06s ease, background .2s}
+    .menu button:hover{transform:translateY(-1px)}
+    .menu button:focus{outline:none; box-shadow:var(--ring)}
+
+    .menu .accent{background:linear-gradient(180deg, rgba(34,211,238,.15), rgba(255,255,255,.04));}
+    .menu .danger{background:linear-gradient(180deg, rgba(239,68,68,.15), rgba(255,255,255,.04));}
+
+    .keypad{display:grid; grid-template-columns: repeat(3,1fr); gap:10px; padding:20px}
+    .keypad button{aspect-ratio:1/1; border-radius:16px; border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.06); color:var(--text); font-size:20px; font-weight:700; cursor:pointer}
+    .keypad .wide{grid-column: span 2}
+    .right{display:flex; flex-direction:column}
+
+    .slot{height:18px; background:linear-gradient(90deg,#111927,#0b1220); border:1px solid rgba(255,255,255,.08); border-radius:10px; margin:0 28px 20px}
+
+    .input{display:flex; gap:10px; align-items:center;}
+    .input input{flex:1; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:12px 14px;
+      color:var(--text); font-size:16px}
+    .input input:focus{outline:none; box-shadow:var(--ring)}
+    .input .go{padding:12px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.1); background:linear-gradient(180deg, rgba(34,211,238,.25), rgba(34,211,238,.08));
+      font-weight:800; cursor:pointer}
+
+    .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#0b1220; border:1px solid rgba(255,255,255,.12);
+      padding:10px 14px; border-radius:999px; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:opacity .25s}
+    .toast.show{opacity:1}
+
+    .footer{padding:14px 22px; display:flex; align-items:center; justify-content:space-between; border-top:1px dashed rgba(255,255,255,.08)}
+    .footer small{color:var(--muted)}
+
+    .badge{display:inline-flex; align-items:center; gap:8px; font-size:12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08);
+      padding:6px 10px; border-radius:999px}
+    .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; background:#0b1220; padding:2px 6px; border-radius:6px; border:1px solid rgba(255,255,255,.12)}
+
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+body{
+  background: linear-gradient(-45deg, #0f172a, #1e293b, #334155, #0f172a);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+}
+.brand h1 {
+  background: linear-gradient(90deg, #22d3ee, #a78bfa, #22d3ee);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 5s linear infinite;
+}
+@keyframes shine {
+  to { background-position: 200% center; }
+}
+.menu button {
+  position: relative;
+  overflow: hidden;
+}
+.menu button::after {
+  content: "";
+  position: absolute;
+  top: 0; left: -100%; width: 200%; height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+@keyframes shimmer {
+  100% { left: 100%; }
+}
+
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="atm">
+      <!-- LEFT: Main Screen -->
+      <section class="card screen" aria-live="polite">
+        <div class="brand">
+          <h1>ABC Bank ATM</h1>
+          <span class="pill">Secure • Fast • Smooth</span>
+        </div>
+        <div class="slot" aria-hidden="true"></div>
+
+        <div id="lcd" class="lcd" role="region" aria-label="ATM display">
+          <div id="view-welcome">
+            <h2>Welcome! Insert card & enter PIN</h2>
+            <p class="muted">Default demo PIN: <strong>1234</strong></p>
+            <div class="input" style="margin-top:10px">
+              <input id="pin" type="password" inputmode="numeric" pattern="[0-9]*" placeholder="Enter 4‑digit PIN" autocomplete="off" aria-label="PIN" maxlength="4" />
+              <button id="login" class="go" aria-label="Login">Login</button>
+            </div>
+            <small class="muted">Tip: you can also use the on‑screen keypad →</small>
+          </div>
+          <div id="view-menu" style="display:none">
+            <h2>Main Menu</h2>
+            <div class="menu" role="menu">
+              <button role="menuitem" data-action="balance" class="accent">Balance Inquiry</button>
+              <button role="menuitem" data-action="mini">Mini Statement</button>
+              <button role="menuitem" data-action="withdraw">Withdraw</button>
+              <button role="menuitem" data-action="deposit">Deposit</button>
+              <button role="menuitem" data-action="fast">Fast Cash</button>
+              <button role="menuitem" data-action="pin">Change PIN</button>
+              <button role="menuitem" data-action="help">Help</button>
+              <button role="menuitem" data-action="exit" class="danger">Exit</button>
+            </div>
+          </div>
+          <div id="view-balance" style="display:none">
+            <h2>Your Balance</h2>
+            <div class="balance" id="balance">₹ 0</div>
+            <small class="muted">Press any key or <span class="kbd">Esc</span> to go back.</small>
+          </div>
+          <div id="view-mini" style="display:none">
+            <h2>Mini Statement</h2>
+            <div id="mini-list" class="muted">No transactions yet.</div>
+            <small class="muted">Last 5 transactions. Press <span class="kbd">Esc</span> to return.</small>
+          </div>
+          <div id="view-form" style="display:none">
+            <h2 id="form-title">Amount</h2>
+            <div class="input">
+              <input id="amount" type="text" inputmode="numeric" placeholder="Enter amount" aria-label="Amount" />
+              <button id="submit" class="go">Submit</button>
+            </div>
+            <small class="muted" id="form-hint"></small>
+          </div>
+          <div id="view-fast" style="display:none">
+            <h2>Fast Cash</h2>
+            <div class="menu">
+              <button data-fast="500">₹500</button>
+              <button data-fast="1000">₹1,000</button>
+              <button data-fast="2000">₹2,000</button>
+              <button data-fast="5000">₹5,000</button>
+            </div>
+            <small class="muted">One‑tap withdrawals. Press <span class="kbd">Esc</span> to cancel.</small>
+          </div>
+          <div id="view-pin" style="display:none">
+            <h2>Change PIN</h2>
+            <div class="input"><input id="oldpin" type="password" maxlength="4" placeholder="Current PIN" />
+              <input id="newpin" type="password" maxlength="4" placeholder="New PIN" /></div>
+            <div class="input"><button id="savepin" class="go">Save</button></div>
+            <small class="muted">PIN must be 4 digits.</small>
+          </div>
+          <div id="view-help" style="display:none">
+            <h2>Help</h2>
+            <p class="muted">Use the keypad to type numbers. Press <span class="kbd">Esc</span> to go back, <span class="kbd">Enter</span> to confirm.
+              This simulator stores demo data in your browser only.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <small>Session: <span id="session">—</span></small>
+          <span class="badge" aria-hidden="true">Made with ♥ for demo</span>
+        </div>
+      </section>
+
+      <!-- RIGHT: Keypad & Quick Info -->
+      <aside class="card right" aria-label="ATM controls">
+        <div class="screen" style="gap:10px">
+          <h2 style="margin:0 0 6px">Keypad</h2>
+          <div class="keypad" aria-label="Numeric keypad">
+            <button data-key="1">1</button>
+            <button data-key="2">2</button>
+            <button data-key="3">3</button>
+            <button data-key="4">4</button>
+            <button data-key="5">5</button>
+            <button data-key="6">6</button>
+            <button data-key="7">7</button>
+            <button data-key="8">8</button>
+            <button data-key="9">9</button>
+            <button data-key="back" aria-label="Backspace">⌫</button>
+            <button data-key="0">0</button>
+            <button data-key="ok" aria-label="Enter">⏎</button>
+          </div>
+
+          <div class="lcd" style="min-height:auto">
+            <div style="display:flex; justify-content:space-between; gap:8px; align-items:center">
+              <div>
+                <div class="muted">Card Holder</div>
+                <strong id="holder">DEMO USER</strong>
+              </div>
+              <div>
+                <div class="muted">Balance</div>
+                <strong id="side-balance">₹ 0</strong>
+              </div>
+              <div>
+                <div class="muted">Last Txn</div>
+                <strong id="last-txn">—</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">Message</div>
+
+  <script>
+    // ---------- Utilities ----------
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    const fmt = n => Number(n).toLocaleString('en-IN', {style:'currency', currency:'INR', maximumFractionDigits:0});
+    const now = () => new Date().toLocaleString();
+
+    const app = {
+      state: {
+        pin: localStorage.getItem('atm_pin') || '1234',
+        balance: parseInt(localStorage.getItem('atm_bal')|| '10000', 10),
+        txns: JSON.parse(localStorage.getItem('atm_txns')|| '[]'),
+        loggedIn: false,
+        focus: 'pin', // points input target for keypad
+        mode: null // 'withdraw' | 'deposit'
+      },
+      save(){
+        localStorage.setItem('atm_pin', this.state.pin);
+        localStorage.setItem('atm_bal', this.state.balance);
+        localStorage.setItem('atm_txns', JSON.stringify(this.state.txns));
+      },
+      toast(msg){
+        const el = $('#toast'); el.textContent = msg; el.classList.add('show');
+        setTimeout(()=> el.classList.remove('show'), 1600);
+      },
+      setView(id){
+        ['welcome','menu','balance','mini','form','fast','pin','help'].forEach(v=>{
+          const el = document.getElementById('view-'+v); if(el) el.style.display = 'none';
+        });
+        const tgt = document.getElementById('view-'+id); if(tgt) tgt.style.display = '';
+      },
+      updateSide(){
+        $('#side-balance').textContent = fmt(this.state.balance);
+        $('#last-txn').textContent = this.state.txns[0] ? this.state.txns[0].type + ' ' + fmt(this.state.txns[0].amount) : '—';
+        $('#session').textContent = this.state.loggedIn ? 'Active' : 'Logged out';
+      },
+      addTxn(type, amount){
+        this.state.txns.unshift({type, amount, time: now()});
+        this.state.txns = this.state.txns.slice(0, 50); // keep last 50
+        this.save();
+        this.updateSide();
+      },
+      requireLogin(){
+        if(!this.state.loggedIn){ this.setView('welcome'); return false; }
+        return true;
+      },
+      reset(){
+        this.state.loggedIn = false; this.state.mode = null; this.state.focus = 'pin';
+        $('#pin').value = '';
+        this.setView('welcome');
+        this.updateSide();
+      }
+    };
+
+    // ---------- Render helpers ----------
+    function renderMini(){
+      const list = app.state.txns.slice(0,5).map(t=>`<div>• <strong>${t.type}</strong> ${fmt(t.amount)} <span class="muted">— ${t.time}</span></div>`).join('');
+      $('#mini-list').innerHTML = list || '<span class="muted">No transactions yet.</span>';
+    }
+
+    function showBalance(){
+      if(!app.requireLogin()) return; 
+      $('#balance').textContent = fmt(app.state.balance);
+      app.setView('balance');
+    }
+
+    function showAmountForm(mode){
+      if(!app.requireLogin()) return;
+      app.state.mode = mode;
+      app.setView('form');
+      app.state.focus = 'amount';
+      const title = mode === 'withdraw' ? 'Withdraw Amount' : 'Deposit Amount';
+      const hint = mode === 'withdraw' ? 'Multiples of 100. Sufficient balance required.' : 'Cash is accepted in whole rupees.';
+      $('#form-title').textContent = title;
+      $('#form-hint').textContent = hint;
+      $('#amount').value = '';
+      $('#amount').focus();
+    }
+
+    function handleAmountSubmit(){
+      const mode = app.state.mode; if(!mode) return;
+      const raw = $('#amount').value || '';
+      const val = parseInt(raw.replace(/\D/g,''),10);
+      if(!val || val<=0){ app.toast('Enter a valid amount'); return; }
+      if(mode==='withdraw'){
+        if(val % 100 !== 0){ app.toast('Enter multiples of 100'); return; }
+        if(val > app.state.balance){ app.toast('Insufficient balance'); return; }
+        app.state.balance -= val;
+        app.addTxn('Withdraw', val);
+        app.toast('Cash dispensed ✔');
+      } else {
+        app.state.balance += val;
+        app.addTxn('Deposit', val);
+        app.toast('Cash deposited ✔');
+      }
+      app.save();
+      showBalance();
+      $('#amount').value = '';
+    }
+
+    function handleFastCash(amount){
+      if(amount % 100 !== 0) return app.toast('Multiples of 100 only');
+      if(amount > app.state.balance) return app.toast('Insufficient balance');
+      app.state.balance -= amount; app.addTxn('Fast Cash', amount); app.save();
+      app.toast('Cash dispensed ✔');
+      showBalance();
+    }
+
+    // ---------- Event wiring ----------
+    function wireMenu(){
+      $('#lcd').addEventListener('click', (e)=>{
+        const btn = e.target.closest('button'); if(!btn) return;
+        const act = btn.dataset.action;
+        if(act==='balance') return showBalance();
+        if(act==='mini'){ if(!app.requireLogin()) return; renderMini(); app.setView('mini'); return; }
+        if(act==='withdraw') return showAmountForm('withdraw');
+        if(act==='deposit') return showAmountForm('deposit');
+        if(act==='fast'){ if(!app.requireLogin()) return; app.setView('fast'); return; }
+        if(act==='pin'){ if(!app.requireLogin()) return; app.setView('pin'); $('#oldpin').focus(); return; }
+        if(act==='help'){ app.setView('help'); return; }
+        if(act==='exit'){ app.toast('Card ejected. Goodbye!'); app.reset(); return; }
+      });
+
+      // Fast cash buttons
+      $('#view-fast').addEventListener('click', (e)=>{
+        const b = e.target.closest('button[data-fast]'); if(!b) return;
+        handleFastCash(parseInt(b.dataset.fast,10));
+      });
+
+      // Submit (withdraw/deposit)
+      $('#submit').addEventListener('click', handleAmountSubmit);
+
+      // Save PIN
+      $('#savepin').addEventListener('click', ()=>{
+        const o = ($('#oldpin').value||'').trim();
+        const n = ($('#newpin').value||'').trim();
+        if(o !== app.state.pin) return app.toast('Wrong current PIN');
+        if(!/^\d{4}$/.test(n)) return app.toast('PIN must be 4 digits');
+        app.state.pin = n; app.save();
+        $('#oldpin').value=''; $('#newpin').value='';
+        app.toast('PIN updated ✔');
+        app.setView('menu');
+      });
+
+      // Login
+      $('#login').addEventListener('click', ()=>{
+        const p = ($('#pin').value||'').trim();
+        if(p === app.state.pin){
+          app.state.loggedIn = true; app.setView('menu'); app.state.focus='menu';
+          app.toast('Welcome!');
+          app.updateSide();
+        } else {
+          app.toast('Invalid PIN');
+        }
+      });
+    }
+
+    function wireKeypad(){
+      $$('.keypad [data-key]').forEach(k=>{
+        k.addEventListener('click', ()=> handleKey(k.dataset.key));
+      });
+
+      document.addEventListener('keydown', (e)=>{
+        if(e.key==='Escape'){ // back
+          if($('#view-menu').style.display!=='none') { app.setView('menu'); }
+          else if($('#view-balance').style.display!=='none' || $('#view-mini').style.display!=='none' || $('#view-fast').style.display!=='none' || $('#view-help').style.display!=='none' || $('#view-pin').style.display!=='none' || $('#view-form').style.display!=='none'){
+            app.setView('menu');
+          }
+        }
+        if(/^[0-9]$/.test(e.key)) handleKey(e.key);
+        if(e.key==='Enter') handleKey('ok');
+        if(e.key==='Backspace') handleKey('back');
+      });
+    }
+
+    function handleKey(key){
+      // Decide target input based on app.state.focus
+      let target = null;
+      if(app.state.focus==='pin') target = $('#pin');
+      else if(app.state.focus==='amount') target = $('#amount');
+      else if($('#oldpin')===document.activeElement || $('#newpin')===document.activeElement){
+        // respect focused field in change pin view
+        target = document.activeElement;
+      }
+
+      if(key==='ok'){
+        if(app.state.focus==='pin') $('#login').click();
+        else if(app.state.focus==='amount') $('#submit').click();
+        return;
+      }
+      if(key==='back'){
+        if(target){ target.value = target.value.slice(0,-1); target.focus(); }
+        return;
+      }
+      if(!/^[0-9]$/.test(key)) return;
+
+      if(target){
+        // allow only digits and max length for pin
+        if(target=== $('#pin')){
+          if(target.value.length>=4) return; // 4-digit pin
+        }
+        target.value += key;
+        target.focus();
+      }
+    }
+
+    // ---------- App start ----------
+    function start(){
+      app.updateSide();
+      wireMenu();
+      wireKeypad();
+
+      // Focus management based on view
+      const observer = new MutationObserver(()=>{
+        if($('#view-welcome').style.display!=='none'){ app.state.focus='pin'; $('#pin').focus(); }
+        else if($('#view-form').style.display!=='none'){ app.state.focus='amount'; $('#amount').focus(); }
+        else { app.state.focus='menu'; }
+      });
+      observer.observe($('#lcd'), {subtree:true, attributes:true, attributeFilter:['style']});
+    }
+
+    start();
+  </script>
+</body>
+</html>
